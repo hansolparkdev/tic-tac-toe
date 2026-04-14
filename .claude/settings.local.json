@@ -20,7 +20,9 @@
       "Bash(cp /c/devel/core-project/.claude/hooks/pre_edit.sh /c/devel/harness/.claude/hooks/)",
       "Bash(git -c user.email=dev@local -c user.name=dev commit -q -m \"fix\\(architect\\): tasks.md에서 E2E/Lighthouse 등 tester 담당 작업 제외 명시\")",
       "Bash(git push:*)",
-      "Bash(git -c user.email=dev@local -c user.name=dev commit -q -m \"docs: tic-tac-toe 기획·스펙 작성 \\(tic-tac-toe-core + tic-tac-toe-meta\\)\" --no-verify)"
+      "Bash(git -c user.email=dev@local -c user.name=dev commit -q -m \"docs: tic-tac-toe 기획·스펙 작성 \\(tic-tac-toe-core + tic-tac-toe-meta\\)\" --no-verify)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\(JSON.stringify\\(j.metadata.vulnerabilities\\)\\);}\\);\")"
     ]
   }
 }

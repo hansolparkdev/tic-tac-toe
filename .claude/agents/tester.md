@@ -38,7 +38,10 @@ description: SDD 시나리오를 E2E·통합 테스트로 변환·실행. 보안
 ### frontend
 1. 기존 단위 테스트 전체 실행 (`STACK.테스트 명령`) → 회귀 확인
 2. 각 `SCENARIOS` → Playwright 테스트 작성 (`{PACKAGE}/e2e/`)
-3. `STACK.E2E 명령` (headless 기본) 실행. CI 아닌 로컬 디버깅 시만 `--headed`.
+3. `STACK.E2E 명령`을 **`--headed --workers=1` + slowMo 옵션**으로 실행 (로컬 개발 기본 — 유저가 각 시나리오 동작을 눈으로 확인 가능).
+   - 예: `npx playwright test --headed --workers=1` + `playwright.config.ts`의 `use.launchOptions.slowMo: 300` (300ms 지연)
+   - 또는 환경변수 `PWDEBUG=console`로 Playwright Inspector 활용
+   - `CI=1` 환경에서만 headless + 병렬 워커 사용
 
 ### fullstack
 backend 단계 → frontend 단계 순차.
