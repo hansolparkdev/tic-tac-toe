@@ -1,5 +1,5 @@
-import { initialState, play, resetRound } from './logic'
-import type { GameState } from './logic'
+import { initialState, play, resetAll, resetRound } from './logic'
+import type { GameState, Mark, Scores } from './logic'
 
 export interface UiState extends GameState {
   shakeToken: number
@@ -14,9 +14,25 @@ export const initialUiState = (): UiState => ({
   pulseToken: 0,
 })
 
+export interface PersistedInit {
+  scores: Scores
+  nextStarter: Mark
+}
+
+export const uiStateFromPersisted = (p: PersistedInit): UiState => ({
+  ...initialState(),
+  scores: p.scores,
+  nextStarter: p.nextStarter,
+  currentMark: p.nextStarter,
+  shakeToken: 0,
+  shakeIndex: null,
+  pulseToken: 0,
+})
+
 export type GameAction =
   | { type: 'PLAY'; index: number }
   | { type: 'RESET_ROUND' }
+  | { type: 'RESET_ALL' }
   | { type: 'CLEAR_SHAKE' }
 
 export function reducer(state: UiState, action: GameAction): UiState {
@@ -49,6 +65,15 @@ export function reducer(state: UiState, action: GameAction): UiState {
       return {
         ...state,
         ...next,
+        shakeIndex: null,
+        pulseToken: 0,
+      }
+    }
+    case 'RESET_ALL': {
+      const next = resetAll()
+      return {
+        ...next,
+        shakeToken: 0,
         shakeIndex: null,
         pulseToken: 0,
       }

@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { initialState, play, resetRound, evaluate } from './logic'
 import type { Board, Mark } from './logic'
 
+describe('initialState scores', () => {
+  it('초기 scores는 X=0, draw=0, O=0', () => {
+    const s = initialState()
+    expect(s.scores).toEqual({ X: 0, draw: 0, O: 0 })
+  })
+})
+
 describe('initialState', () => {
   it('빈 보드, 현재 X, 다음 선공 X, winner/line null', () => {
     const s = initialState()

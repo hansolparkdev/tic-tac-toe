@@ -3,12 +3,19 @@ export type Cell = Mark | null
 export type Board = [Cell, Cell, Cell, Cell, Cell, Cell, Cell, Cell, Cell]
 export type Line = [number, number, number]
 
+export interface Scores {
+  X: number
+  draw: number
+  O: number
+}
+
 export interface GameState {
   board: Board
   currentMark: Mark
   nextStarter: Mark
   winner: Mark | 'draw' | null
   winningLine: Line | null
+  scores: Scores
 }
 
 export interface EvaluateResult {
@@ -36,6 +43,7 @@ export const initialState = (): GameState => ({
   nextStarter: 'X',
   winner: null,
   winningLine: null,
+  scores: { X: 0, draw: 0, O: 0 },
 })
 
 export const evaluate = (board: Board): EvaluateResult => {
@@ -82,6 +90,12 @@ export const play = (state: GameState, index: number): GameState => {
     nextStarter = opposite(winner)
   }
 
+  const scores: Scores = {
+    X: state.scores.X + (winner === 'X' ? 1 : 0),
+    draw: state.scores.draw + (winner === 'draw' ? 1 : 0),
+    O: state.scores.O + (winner === 'O' ? 1 : 0),
+  }
+
   return {
     ...state,
     board: nextBoard,
@@ -89,6 +103,7 @@ export const play = (state: GameState, index: number): GameState => {
     winner,
     winningLine: line,
     nextStarter,
+    scores,
   }
 }
 
@@ -98,4 +113,7 @@ export const resetRound = (state: GameState): GameState => ({
   nextStarter: state.nextStarter,
   winner: null,
   winningLine: null,
+  scores: state.scores,
 })
+
+export const resetAll = (): GameState => initialState()

@@ -28,12 +28,23 @@ export default {
           '0%': { strokeDashoffset: '100%' },
           '100%': { strokeDashoffset: '0' },
         },
+        countup: {
+          '0%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
         pop: 'pop 0.15s ease-out',
         shake: 'shake 0.2s ease-in-out',
         'pulse-ring': 'pulseRing 1s ease-in-out infinite',
         'draw-line': 'drawLine 0.3s ease-out forwards',
+        countup: 'countup 0.4s ease-out',
+        'fade-in': 'fadeIn 0.15s ease-out',
       },
     },
   },
