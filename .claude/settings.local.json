@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(npm create:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm install:*)",
+      "Bash(dir C:/devel/core-project/)",
+      "Bash(npx playwright:*)",
+      "Bash(git add:*)",
+      "Bash(git -c user.email=init@local -c user.name=init commit -m \"chore: 프로젝트 초기화\" --no-verify)"
+    ]
+  }
+}
