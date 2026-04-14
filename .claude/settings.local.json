@@ -12,7 +12,15 @@
       "Bash(dir C:/devel/core-project/)",
       "Bash(npx playwright:*)",
       "Bash(git add:*)",
-      "Bash(git -c user.email=init@local -c user.name=init commit -m \"chore: 프로젝트 초기화\" --no-verify)"
+      "Bash(git -c user.email=init@local -c user.name=init commit -m \"chore: 프로젝트 초기화\" --no-verify)",
+      "Bash(cp -r /c/devel/core-project/.claude/agents /c/devel/harness/.claude/)",
+      "Bash(cp -r /c/devel/core-project/.claude/skills /c/devel/harness/.claude/)",
+      "Bash(cp /c/devel/core-project/.claude/hooks/pre_edit.sh /c/devel/harness/.claude/)",
+      "Bash(mkdir -p /c/devel/harness/.claude/hooks)",
+      "Bash(cp /c/devel/core-project/.claude/hooks/pre_edit.sh /c/devel/harness/.claude/hooks/)",
+      "Bash(git -c user.email=dev@local -c user.name=dev commit -q -m \"fix\\(architect\\): tasks.md에서 E2E/Lighthouse 등 tester 담당 작업 제외 명시\")",
+      "Bash(git push:*)",
+      "Bash(git -c user.email=dev@local -c user.name=dev commit -q -m \"docs: tic-tac-toe 기획·스펙 작성 \\(tic-tac-toe-core + tic-tac-toe-meta\\)\" --no-verify)"
     ]
   }
 }

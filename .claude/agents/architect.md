@@ -85,6 +85,17 @@ description: plan.md를 기반으로 슬라이싱하고 SDD 스펙(proposal/desi
 ```
 
 ### tasks.md
+
+**범위 제한**: 개발자 담당 작업만 기입. 아래 항목은 tester가 수행하므로 **tasks.md에 넣지 않음**:
+- E2E 테스트 작성·실행 (Playwright 등)
+- Lighthouse·보안 스캔 등 외부 검증 도구 실행
+- 성능·접근성 감사 (수동 QA 체크리스트)
+
+개발자가 직접 수행하는 것만 기입:
+- 구현 (컴포넌트·함수·API 등)
+- 단위 테스트 (Vitest/Jest/pytest) 및 TDD 관련
+- 통합 테스트 (RTL 렌더 테스트 등 단위 환경 내)
+
 ```markdown
 # Tasks: {feature}-{slice}
 

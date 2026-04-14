@@ -3,248 +3,286 @@
 ## 전체 흐름
 
 ```
-[프로젝트 최초 1회]
-CLAUDE.md 작성      설치 명령 / 테스트 명령 / 컨벤션 등 프로젝트 환경 정의
+[최초 1회]
+/init                       프로젝트 타입·스택 수집 → 스캐폴딩 → 훅 설치 → CLAUDE.md + docs/DESIGN.md + .claudeignore + 초기 git commit
+
+[기능 개발 사이클]
+/planning {기능명}           planner + critic → docs/plans/{feature}/plan.md
       ↓
-/planning {기능명}   기획 에이전트 + 비평 에이전트 → plan.md
+/spec {feature}              architect → docs/specs/changes/{feature}-{slice}/ 슬라이스 N개 (4파일씩)
       ↓
-/spec {기능명}       아키텍트 → 기존 스펙 확인 → ADDED/MODIFIED 판단 → 스펙 작성
-      ↓
-/dev {기능명}        슬라이스별 순서대로:
-                     개발 → 리뷰 루프 → 테스트 → sync → archive
+/dev {slice}                 개발 → 리뷰(≤3회) → 테스트 → sync → archive → git commit
+                             중단 시 tasks.md + .status 파일로 재개 가능
 ```
 
-## CLAUDE.md
+모노레포일 때는 `/spec login`이 자동으로 `login-web`, `login-api`처럼 **패키지별로 슬라이스 분리**.
 
-프로젝트 루트에 **한 번만** 작성하는 파일. 기능이 추가될 때마다 바꾸는 게 아님.
+---
 
-```markdown
-# CLAUDE.md
+## 지원 프로젝트 타입
 
-## 설치 명령
-(예: npm install / pip install -r requirements.txt / poetry install)
-
-## 테스트 명령
-- 전체: (예: npm test / pytest)
-- 단일 파일: (예: npm test -- --testPathPattern=파일명 / pytest tests/test_auth.py)
-- 커버리지: (예: npm test -- --coverage / pytest --cov)
-
-## 개발 서버
-(예: npm run dev / uvicorn main:app --reload)
-
-## 보안 스캔
-(예: npm audit / pip-audit)
-
-## 코드 컨벤션
-- (팀 규칙 작성)
-```
+| 타입 | 예시 | 슬라이싱 |
+|------|------|----------|
+| `frontend` | React / Vue / Next.js SPA | 사용자 흐름 단위 |
+| `backend` | FastAPI / Express / NestJS | 기능 단위 |
+| `fullstack` | Next.js App Router 등 | UI+API 묶음 단위 |
+| `monorepo` | Turborepo / Nx | **반드시 패키지별 분리** |
 
 ---
 
 ## 디렉토리 구조
 
 ```
-docs/
-├── design/
-│   ├── DESIGN.md                        ← 공통 디자인 시스템 (기본 참조)
-│   └── {feature}/
-│       ├── stitch-prompt.md             ← Stitch 생성 프롬프트
-│       └── ui.png                       ← Stitch UI 결과물
-│
-├── plans/
-│   └── {feature}/
-│       └── plan.md
-│
-└── specs/
-    ├── main/                            ← source of truth (누적 병합)
-    │   └── {domain}/
-    │       └── spec.md
-    │
-    ├── changes/                         ← 진행 중인 변경사항
-    │   ├── {feature}-{slice}/           ← 슬라이스 = change 단위
-    │   │   ├── proposal.md              ← 의도 + 범위 + 변경유형 + 영향 도메인
-    │   │   ├── design.md
-    │   │   ├── tasks.md
-    │   │   └── specs/                   ← 영향받는 도메인별 spec
-    │   │       ├── auth/
-    │   │       │   └── spec.md          ← delta (ADDED/MODIFIED/REMOVED)
-    │   │       └── user/
-    │   │           └── spec.md
-    │   └── {feature}-{slice2}/
-    │       └── ...
-    │
-    └── archive/                         ← 완료된 변경사항
-        └── YYYY-MM-DD-{feature}-{slice}/
-            ├── proposal.md
-            ├── design.md
-            ├── tasks.md
-            └── specs/
-                └── {domain}/
-                    └── spec.md
+프로젝트 루트/
+├── .claude/
+│   ├── agents/                 # 6개 에이전트
+│   ├── skills/                 # 4개 스킬 (init, planning, spec, dev)
+│   ├── hooks/pre_edit.sh       # Claude Edit/Write 시 즉시 린트
+│   └── settings.json           # PreToolUse 훅 등록
+├── .claudeignore               # Claude가 읽지 않을 경로 (node_modules, .env 등)
+├── .husky/pre-commit           # 커밋 시점 린트·포맷 최종 게이트
+├── CLAUDE.md                   # 프로젝트 타입·스택·명령·컨벤션 (단일) 또는 모노레포면 루트 + 패키지별
+└── docs/
+    ├── DESIGN.md               # 디자인 토큰 (색상·타이포·간격) — frontend 계열만
+    ├── harness.md              # 훅 설계 참조 (init이 읽어 스택별 훅 설치)
+    ├── workflow.md             # (이 문서)
+    ├── plans/
+    │   └── {feature}/plan.md
+    └── specs/
+        ├── main/               # source of truth
+        │   └── {domain}/spec.md
+        ├── changes/            # 진행 중
+        │   └── {feature}-{slice}/
+        │       ├── proposal.md (feature·type·패키지·변경유형·영향도메인)
+        │       ├── design.md   (사용 스택·데이터 모델·컴포넌트·API 명세)
+        │       ├── tasks.md    (태스크 체크리스트 + 선행 슬라이스)
+        │       ├── .status     (개발 단계 기록 — 재개용)
+        │       └── specs/{domain}/spec.md (delta)
+        └── archive/
+            └── YYYY-MM-DD-{feature}-{slice}/
+```
+
+---
+
+## CLAUDE.md (init이 생성)
+
+프로젝트 루트에 **한 번만** 작성. 모노레포면 루트 + 패키지별.
+
+```markdown
+# CLAUDE.md
+
+## 프로젝트 타입
+frontend | backend | fullstack | monorepo
+
+## 기술 스택
+- 언어·프레임워크
+- 패키지 매니저
+- 단위 테스트 / E2E (프론트만)
+- UI 라이브러리 (프론트만) / DB (백엔드만)
+
+## 아키텍처
+- 패턴 / 폴더 구조
+
+## 테스트 폴더 / 설치 명령 / 단위 테스트 명령 / E2E 명령 / 개발 서버 / 보안 스캔
+
+## 코드 컨벤션
+(린트가 자동 적용. 예외 사례만)
 ```
 
 ---
 
 ## 1. 기획 단계 (/planning)
 
-**에이전트:** 기획 에이전트 + 비평 에이전트
+**에이전트:** planner + critic
 
-**흐름**
 ```
-기획 에이전트: 초안 작성
+루트 CLAUDE.md 읽기 → STRUCTURE·PACKAGES 추출
       ↓
-비평 에이전트: 비평 (메인이 회차 정보 전달)
+planner (STRUCTURE 받아 FE/BE/패키지별 섹션 포함한 plan.md 초안)
       ↓
-기획 에이전트: 피드백 반영
-      ↓
-PASS 또는 3회 완료 시 종료
+critic (최대 3회 — 치명적 문제 없으면 즉시 PASS)
       ↓
 docs/plans/{feature}/plan.md 저장
 ```
 
-**디자인 (선택, 사람이 직접)**
-```
-plan.md → Google Stitch 입력 → UI 생성
-결과물 → docs/design/{feature}/ 저장
-```
+디자인 (선택, 사람이 직접): plan.md → Google Stitch → `docs/design/{feature}/` 저장.
 
 ---
 
 ## 2. 스펙 단계 (/spec)
 
-**에이전트:** 아키텍트
-
-**핵심: 기존 스펙 확인 → ADDED/MODIFIED 판단**
+**에이전트:** architect
 
 ```
-docs/specs/main/ 확인
+루트 CLAUDE.md + docs/specs/main/ 도메인 확인
       ↓
-관련 도메인 없음 → 신규 (ADDED only)
-관련 도메인 있음 → 수정 (ADDED/MODIFIED/REMOVED 혼합)
+architect (plan.md 1회 읽기)
+  - 도메인 미존재 → ADDED only
+  - 도메인 존재 → ADDED / MODIFIED / REMOVED 혼합
+  - STRUCTURE=monorepo → 패키지별로 슬라이스 분리 (login-web, login-api)
       ↓
-슬라이싱 → 각 슬라이스별 4개 파일 작성
+각 슬라이스에 4개 파일 생성
+      ↓
+유저에게 슬라이스 목록·의존관계·실행 순서 안내
 ```
 
-**proposal.md 필수 포함 항목**
-```
-- 변경 유형: ADDED | MODIFIED
-- 도메인: {domain}   ← sync 시 main/{domain}/spec.md 에 반영
-- 기존 스펙 경로 (신규면 "없음")
-```
+### proposal.md 필수 필드
+- `feature`
+- `type`: frontend | backend | fullstack
+- `패키지`: `.` 또는 `apps/web` 등
+- `변경 유형`: ADDED | MODIFIED
+- `영향 도메인`: `{domain}: ADDED|MODIFIED`
+
+### design.md 필수 섹션
+- `## 사용 스택` (CLAUDE.md에서 상속한 언어·UI 라이브러리·테스트 프레임워크 등)
+- 데이터 모델 / 컴포넌트 구조 / API 명세 (타입 따라)
 
 ---
 
 ## 3. 개발 단계 (/dev)
 
-**에이전트:** 개발 에이전트 + 리뷰어 + 테스터
-
-**슬라이스별 순서대로 (01 → 02 → ...) 처리**
-
-각 슬라이스마다:
-```
-개발 에이전트: CLAUDE.md 읽기(없으면 넘어감) → TDD → 구현
-      ↓
-리뷰어: 코드 리뷰 (메인이 회차 전달, 최대 3회)
-  FAIL → 개발 에이전트 재개발
-  PASS → 다음 단계
-      ↓
-테스터: spec 시나리오 → E2E 작성 → 실행 → 보안 스캔
-      ↓
-Sync: delta → docs/specs/main/{domain}/spec.md 반영
-      ↓
-Archive: YYYY-MM-DD-{feature}-{slice}/ 로 이동
-```
-
-**디자인 참조 규칙**
-```
-1. docs/design/{feature}/ 있으면 우선
-2. 없으면 docs/design/DESIGN.md
-3. 둘 다 없으면 넘어감
-```
-
----
-
-## 4. Sync 상세
-
-**ADDED (신규):**
-```
-spec.md ADDED → main/{domain}/spec.md 에 추가
-(파일 없으면 새로 생성)
-```
-
-**MODIFIED (수정):**
-```
-delta 반영 순서: REMOVED → MODIFIED → ADDED
-- REMOVED: 해당 요구사항 삭제
-- MODIFIED: 해당 요구사항 전체 교체
-- ADDED: 새 요구사항 추가
-```
-
-**sync 실패 시 아카이브 금지** — 데이터 무결성 보장
-
----
-
-## 5. Archive 상세
+**에이전트:** developer + reviewer + tester
 
 ```
-슬라이스 단위로 아카이브:
-changes/{feature}/01-{slice}/
-→ archive/2025-01-24-{feature}-01-{slice}/
+Step 0: 재개 지점 판별
+  tasks.md 체크박스 + .status 파일 확인
+  - 전부 [x] + reviewed → 테스터부터
+  - 전부 [x] + tested   → sync부터
+  - 일부 [x]            → 미완료 task부터 개발
+  - 전부 [ ]            → 처음부터
 
-같은 기능 반복 수정 시:
-archive/2025-01-24-login-01-email/   ← 1차
-archive/2025-01-31-login-01-email/   ← 2차 (날짜가 달라 충돌 없음)
+Step 1: 컨텍스트 로드 (스킬에서만 읽음)
+  proposal.md·tasks.md → SLICE·TYPE·PACKAGE·DOMAIN·DEPENDS
+  CLAUDE.md (루트 + 모노레포면 패키지별) → STACK
+  plan.md (프론트만) → UX_POINTS (hover·cursor·색상 등)
+  spec.md delta → SCENARIOS (Given/When/Then + API 명세)
+
+Step 2: 개발자 호출 (변수만 받음, 파일 재읽기 금지)
+  작업 디렉토리 = PACKAGE
+  TDD 사이클: 단위 테스트 → FAIL → 구현 → PASS
+  UX_POINTS·UI 라이브러리 사전 반영 (리뷰 FAIL 감소)
+  tasks.md 체크박스 배치 업데이트
+  CHANGED_FILES 출력
+
+Step 3: 리뷰 루프 (최대 3회)
+  reviewer (CHANGED_FILES + UX_POINTS 변수만)
+  코드 품질·UX·엣지케이스만 검토 (요구사항 구현 여부는 tester 담당)
+  FAIL → 피드백을 유저에게 출력 후 개발자 재호출
+  PASS → .status=reviewed
+
+Step 4: 테스터 호출
+  tester (SCENARIOS 변수만)
+  frontend: Playwright E2E (headless 기본) + 단위 테스트 회귀 확인
+  backend: API 통합 테스트 + 커버리지
+  보안 스캔 (npm audit / pip-audit 등)
+  PASS → .status=tested
+
+Step 5: Sync
+  docs/specs/changes/{slice}/specs/{domain}/spec.md → docs/specs/main/{domain}/spec.md
+  순서: REMOVED → MODIFIED → ADDED
+  동일 Requirement 이름은 delta가 main 덮어씀
+
+Step 6: Archive
+  docs/specs/changes/{slice}/ → docs/specs/archive/YYYY-MM-DD-{slice}/
+  원본 폴더 삭제
+
+Step 7: Git 커밋
+  git commit -m "feat({slice}): {proposal.md Intent 한 줄 요약}"
 ```
 
 ---
 
-## 에이전트 목록
+## 에이전트 역할 경계 (중복 금지)
 
-| 에이전트 | 역할 | 단계 |
-|---------|------|------|
-| 기획 에이전트 | plan.md 작성 | 기획 |
-| 비평 에이전트 | PASS/FAIL 비평 (회차 수신) | 기획 |
-| 아키텍트 | 기존 스펙 확인 + 슬라이싱 + OpenSpec 형식 작성 | 스펙 |
-| 개발 에이전트 | CLAUDE.md 참조 + TDD + 구현 | 개발 |
-| 리뷰어 | 전체 스펙(main+delta) 기준 코드 리뷰 (회차 수신) | 개발 |
-| 테스터 | spec 시나리오 → E2E + 보안 스캔 | 개발 |
+| 에이전트 | 책임 | 읽는 것 |
+|----------|------|---------|
+| planner | plan.md 작성 (STRUCTURE 반영) | CLAUDE.md (스킬이 변수화) |
+| critic | plan.md 비평 (회차 수신, 즉시 PASS 가능) | planner 출력물 |
+| architect | plan → 4개 파일 · 슬라이싱 · 스택 주입 | plan.md |
+| developer | TDD 구현 · UX_POINTS 반영 · tasks 업데이트 | tasks.md만 (나머지는 변수) |
+| reviewer | 코드 품질·UX·엣지케이스 | CHANGED_FILES만 |
+| tester | SCENARIOS → E2E/통합 테스트 작성·실행 · 보안 스캔 | 파일 읽기 금지 (변수만) |
 
 ---
 
-## 스킬
+## 훅 (로컬 게이트)
+
+`/init`이 docs/harness.md 참조해서 스택별로 자동 설치:
+
+### Claude Code 훅 (파일 수정 시점)
+`.claude/hooks/pre_edit.sh` — Edit/Write 호출 시 ESLint/Ruff 즉시 검사.
+
+### Pre-commit 훅 (커밋 시점)
+- Node/TS: husky + lint-staged → ESLint·Prettier
+- Python: pre-commit + Ruff
+
+### 역할 분담
+- **코드 규칙** (`no-console`, `no-explicit-any` 등) → **린트**가 강제
+- **워크플로우 순서** → **스킬**이 강제
+- **출력 형식·품질 판단** → **에이전트**가 강제
+
+---
+
+## Sync 상세
 
 ```
-/planning {기능명}         기획 → plan.md (3회 FAIL 시 경고 포함 저장 후 유저 확인)
-/spec {기능명}             스펙 → changes/{feature}-{slice}/ (flat 구조)
-/dev {feature}-{slice}     단일 슬라이스 개발 → sync → archive
+ADDED only    → main/{domain}/spec.md 에 추가 (파일 없으면 생성)
+MODIFIED 혼합 → REMOVED → MODIFIED → ADDED 순
+  - REMOVED : 해당 Requirement 블록 삭제
+  - MODIFIED: 동일 이름 Requirement 블록 전체 교체
+  - ADDED   : 새 Requirement 추가
 ```
 
-## 재진입 방법 (중단된 경우)
+Sync 실패 시 **archive 금지** (데이터 무결성).
+
+---
+
+## Archive 상세
+
 ```
-sync만 재실행    → "sync만 실행해줘" 요청
-테스트만 재실행  → "테스트만 재실행해줘" 요청
+docs/specs/changes/{slice}/  →(이동)→  docs/specs/archive/YYYY-MM-DD-{slice}/
+
+같은 슬라이스 재작업 시:
+  archive/2026-04-15-login-web/    ← 1차
+  archive/2026-05-02-login-web/    ← 2차 (날짜 다름 충돌 없음)
 ```
+
+---
+
+## 재진입 방법
+
+| 상황 | 명령 |
+|------|------|
+| `/dev` 중단 (개발 중) | `/dev {slice}` — tasks.md·.status 확인 후 이어감 |
+| sync만 재실행 | "sync만 실행해줘" |
+| 테스트만 재실행 | "테스트만 재실행해줘" |
+| 리뷰 3회 FAIL 이후 | 피드백 반영 후 `/dev {slice}` (라운드 리셋) |
+
+---
+
+## 속도·컨텍스트 주의사항
+
+### 병목 구간과 완화책
+
+| 병목 | 완화 |
+|------|------|
+| 리뷰 FAIL 재작업 | developer가 UX_POINTS 변수로 사전 반영 → 1회차 PASS 유도 |
+| 에이전트별 파일 재읽기 | 스킬이 중앙에서 1회 읽고 변수로 주입 |
+| `.claudeignore` 부재 | init 단계에서 자동 생성 (node_modules, coverage 등 차단) |
+| Playwright 미설치 | init이 자동 설치. tester 단계에서도 체크 |
+| 슬라이스 과대 | 1~3일 작업량 기준 분리. 크면 리뷰 비용 기하급수 |
+
+### 토큰 절약 규칙
+- 에이전트 파일은 변수 기반으로 작성 → 프롬프트 짧음
+- 리뷰어 출력은 FAIL 항목만 상세
+- tester는 SCENARIOS 변수만 사용 (spec.md 재읽기 금지)
+
+---
 
 ## 주의사항
-- `/spec`과 `/dev` 경로 규약: 반드시 `changes/{feature}-{slice}/` flat 구조
-- 슬라이스 의존관계: tasks.md `## 의존관계` 기준, 선행 슬라이스 archive 확인 후 실행
-- 테스트 실행 전: 로컬 서버 + 테스트 DB + 환경 변수 준비 필요
-- sync 실패 시: 아카이브 하지 않음
 
-## 속도 / 컨텍스트 주의사항
-
-**병목 구간:**
-- 리뷰 루프 3회 × (리뷰 + 재구현) = 가장 큰 컨텍스트 소비 구간
-  → 치명적 문제 없으면 1~2회차에 PASS 가능 (3회 채울 필요 없음)
-- 기획 루프도 동일: 명확한 요구사항이면 1회에 PASS
-
-**컨텍스트 절약 규칙:**
-- 각 에이전트는 자기 역할에 필요한 파일만 읽음 (type 기반 스킵 적용)
-  - backend: design.md, plan.md, UX 체크리스트 읽지 않음
-  - frontend: design.md(API) 읽지 않음
-- 리뷰어 출력: FAIL 항목만 상세 기술 (PASS 항목 나열 금지)
-- 테스터: 커버리지는 TDD 결과 확인만 (별도 재실행 금지)
-
-**슬라이스 크기:**
-- 슬라이스가 너무 크면 리뷰 루프 비용이 기하급수적으로 증가
-- 1-3일 작업량으로 분리 권장
+- `/spec`·`/dev` 경로 규약: `changes/{feature}-{slice}/` flat 구조
+- 슬라이스 의존관계: `tasks.md`의 `선행 슬라이스:` 기준, archive 존재 확인 후 실행
+- 테스트 환경: backend는 로컬 서버·DB·env 준비 필요. frontend는 개발 서버 자동 띄움
+- Sync 실패 시 archive 금지 (데이터 무결성)
+- 모노레포는 반드시 패키지별 슬라이스 (architect 강제)
